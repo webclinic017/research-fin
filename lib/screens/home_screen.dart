@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:researchfin/theme/colors.dart';
+import 'package:researchfin/views/candlestick_chart_view.dart';
 import 'package:researchfin/widgets/time_interval_button.dart';
 import 'package:researchfin/widgets/annotation_tool_button.dart';
 
@@ -91,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             // >>> Stock Symbol [END] ------------------>|
             SizedBox(height: 20.0),
-            // >>> [BLOCK] Stock Symbol Graph ------------->|
+            // >>> [BLOCK] Stock Symbol Chart ------------->|
             Container(
               width: double.infinity,
               height: 420.0,
@@ -113,8 +114,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+              // child: CandlestickChart(),
             ),
-            // >>> Stock Symbol Graph [END] ------------->|
+            // >>> Stock Symbol Chart [END] ------------->|
             SizedBox(height: 32.0),
             // >>> [BLOCK] Time Interval Section ------------->|
             Text(

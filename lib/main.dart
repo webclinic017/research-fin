@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import 'package:researchfin/screens/home_screen.dart';
 import 'package:researchfin/theme/theme_data.dart';
+import 'package:researchfin/controller/controller.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -20,19 +22,22 @@ class ResearchFin extends StatelessWidget {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    return MaterialApp(
-      title: 'Research',
-      theme: researchFinTheme,
-      home: HomeScreen(),
-      builder: (BuildContext context, Widget? child) {
-        final MediaQueryData data = MediaQuery.of(context);
-        return MediaQuery(
-          data: data.copyWith(
-            textScaleFactor: 1.0,
-          ),
-          child: child!,
-        );
-      },
+    return ChangeNotifierProvider<Controller>(
+      create: (context) => Controller(),
+      child: MaterialApp(
+        title: 'Research',
+        theme: researchFinTheme,
+        home: HomeScreen(),
+        builder: (BuildContext context, Widget? child) {
+          final MediaQueryData data = MediaQuery.of(context);
+          return MediaQuery(
+            data: data.copyWith(
+              textScaleFactor: 1.0,
+            ),
+            child: child!,
+          );
+        },
+      ),
     );
   }
 }
