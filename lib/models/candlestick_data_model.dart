@@ -8,20 +8,20 @@ class CandlestickDataModel {
     required this.volume,
   });
 
-  String timeStamp;
-  String open;
-  String high;
-  String low;
-  String close;
-  String volume;
+  DateTime timeStamp;
+  double open;
+  double high;
+  double low;
+  double close;
+  double volume;
 
   factory CandlestickDataModel.fromJson(String timeStamp, Map<String, dynamic> json) => CandlestickDataModel(
-    timeStamp: timeStamp,
-    open: json["1. open"],
-    high: json["2. high"],
-    low: json["3. low"],
-    close: json["4. close"],
-    volume: json["5. volume"],
+    timeStamp: DateTime.parse(timeStamp),
+    open: double.parse(json["1. open"]),
+    high: double.parse(json["2. high"]),
+    low: double.parse(json["3. low"]),
+    close: double.parse(json["4. close"]),
+    volume: double.parse(json["5. volume"]),
   );
 
 // Map<String, dynamic> toJson() => {
@@ -31,11 +31,4 @@ class CandlestickDataModel {
 //   "4. close": close,
 //   "5. volume": volume,
 // };
-}
-
-class Temp {
-  String timeStamp;
-  List<CandlestickDataModel> candlestickValues;
-
-  Temp({required this.timeStamp, required this.candlestickValues});
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:researchfin/theme/colors.dart';
 import 'package:researchfin/views/candlestick_chart_view.dart';
 import 'package:researchfin/widgets/time_interval_button.dart';
 import 'package:researchfin/widgets/annotation_tool_button.dart';
+import 'package:researchfin/controller/controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -13,15 +15,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  // Future? status;
+
   late String _stockSymbol;
   late TextEditingController _stockSymbolController;
+
+  late Controller controller, controllerFalse;
+
+  final String _functionDaily = 'TIME_SERIES_DAILY';
+  final String _functionWeekly = 'TIME_SERIES_WEEKLY';
+  final String _functionMonthly = 'TIME_SERIES_MONTHLY';
 
   @override
   void initState() {
     super.initState();
 
-    _stockSymbol = 'AGB';
-    _stockSymbolController = TextEditingController();
+    _stockSymbol = '---';
+    _stockSymbolController = TextEditingController(text: '');
   }
 
   @override
@@ -33,6 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    controller = Provider.of<Controller>(context);
+    controllerFalse = Provider.of<Controller>(context, listen: false);
+
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -49,35 +64,66 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Expanded(
                     child: SizedBox(
-                      child: TextFormField(
-                        controller: _stockSymbolController,
-                        cursorHeight: 24.0,
-                        maxLines: 1,
-                        // autofocus: true,
-                        style: Theme.of(context).textTheme.headline6,
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.all(0.0),
-                          border: InputBorder.none,
-                          hintText: 'Search Stock Symbol',
-                          hintStyle: Theme.of(context).textTheme.headline6?.copyWith(color: AppColor.stockWhite.withOpacity(0.5)),
-                          errorBorder: InputBorder.none,
-                          errorText: 'Invalid Stock Symbol',
-                          errorStyle: Theme.of(context).textTheme.caption?.copyWith(color: AppColor.stockRed),
+                      child: Form(
+                        key: _formKey,
+                        child: TextFormField(
+                          controller: _stockSymbolController,
+                          cursorHeight: 24.0,
+                          maxLines: 1,
+                          autofocus: true,
+                          style: Theme.of(context).textTheme.headline6,
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.all(0.0),
+                            border: InputBorder.none,
+                            hintText: 'Search Stock Symbol',
+                            hintStyle: Theme.of(context).textTheme.headline6?.copyWith(color: AppColor.stockWhite.withOpacity(0.5)),
+                            errorBorder: InputBorder.none,
+                            errorStyle: Theme.of(context).textTheme.caption?.copyWith(color: AppColor.stockRed),
+                          ),
+                          validator: (String? searchText) {
+                            if (searchText!.isEmpty) {
+                              // _errorMessage = 'Please enter a stock symbol!';
+                              return 'Please enter a stock symbol!';
+                            } else if (searchText.toUpperCase().contains('IBM') == false) {
+                              return 'Invalid Symbol';
+                            }
+                          },
+                          onFieldSubmitted: (searchText) async {
+                            if (_formKey.currentState!.validate()) {
+                              late bool status;
+                              status = await controllerFalse.getJsonViaHttp(searchText.toUpperCase(), _functionDaily);
+
+                              setState(() {
+                                if (status) {
+                                  _stockSymbol = searchText.toUpperCase();
+                                  _stockSymbolController.text = '';
+                                } else {
+                                  _stockSymbol = 'ERROR';
+                                }
+                              });
+                            }
+                          },
                         ),
-                        validator: (searchText) {
-                          // TODO : Validate Inputs
-                        },
-                        onFieldSubmitted: (searchText) {
-                          // TODO : Search for stock symbol
-                        },
                       ),
                     ),
                   ),
                   SizedBox(width: 16.0),
                   AnnotationButton(
                     icon: Icons.search,
-                    onTap: () {
-                      // TODO : Search for stock symbol
+                    onTap: () async {
+                      if (_formKey.currentState!.validate()) {
+                        late bool status;
+                        status = await controllerFalse.getJsonViaHttp(_stockSymbolController.text.toUpperCase(), _functionDaily);
+
+                        setState(() {
+                          if (status) {
+                            _stockSymbol = _stockSymbolController.text.toUpperCase();
+                            _stockSymbolController.text = '';
+                          } else {
+                            _stockSymbol = 'ERROR';
+                          }
+                        });
+                      }
                     },
                   ),
                 ],
@@ -94,6 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 20.0),
             // >>> [BLOCK] Stock Symbol Chart ------------->|
             Container(
+              padding: EdgeInsets.only(top: 16.0, left: 16.0, right: 8.0),
               width: double.infinity,
               height: 420.0,
               decoration: BoxDecoration(
@@ -114,7 +161,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              // child: CandlestickChart(),
+              // >>> Candlestick Chart Widget --------------------->|
+              child: CandlestickChart(),
+              // child: FutureBuilder(
+              //   future: controllerFalse.getJsonViaHttp(_stockSymbolController.text.toUpperCase(), _functionDaily),
+              //   builder: (BuildContext context, AsyncSnapshot snapshot) {
+              //     if (snapshot.connectionState == ConnectionState.active) {
+              //       return CircularProgressIndicator();
+              //     } else if (snapshot.hasData) {
+              //       return Container(child: Text('data fetched'));
+              //     } else {
+              //       return Container(child: Text('error has occurred'));
+              //     }
+              //   },
+                // initialData: () {
+                //   Container(child: Text('data not available'));
+                // },
+              // ),
             ),
             // >>> Stock Symbol Chart [END] ------------->|
             SizedBox(height: 32.0),
@@ -194,9 +257,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-
-
-
-

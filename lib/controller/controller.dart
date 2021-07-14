@@ -6,29 +6,28 @@ import 'package:http/http.dart' as http;
 import 'package:researchfin/models/stock_symbol_model.dart';
 
 class Controller with ChangeNotifier {
+  StockSymbolModel? _stockSymbolModel;
 
-  late StockSymbolModel _stockSymbolModel;
+  StockSymbolModel? get stockSymbolModel => _stockSymbolModel;
 
-  StockSymbolModel get stockSymbolModel => _stockSymbolModel;
-
-  void getJsonViaHttp(String stockSymbol, String function) async {
-
-    // StockSymbolModel? stockSymbolModel;
+  Future<bool> getJsonViaHttp(String stockSymbol, String function) async {
     Uri url = Uri.parse('https://www.alphavantage.co/query?function=$function&symbol=$stockSymbol&apikey=Y9JVN150E7U3U6ZV');
 
-    http.Response response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      // stockSymbolModel = json.decode(response.body);
+    try {
+      http.Response response = await http.get(url);
       _stockSymbolModel = StockSymbolModel.fromJson(json.decode(response.body));
 
-      _stockSymbolModel.candlestickData.forEach((element) {
+      _stockSymbolModel!.candlestickData.forEach((element) {
         print('Timestamp : ${element.timeStamp}\nOpen : ${element.open}\nClose : ${element.close}\nHigh : ${element.high}\nLow : ${element.low}\nVolume : ${element.volume}\n\n');
       });
+
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      print('Error while fetching data from https: $e');
+      return false;
     }
-
-    notifyListeners();
-
     // return stockSymbolModel;
   }
 }
