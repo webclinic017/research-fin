@@ -3,18 +3,17 @@ import 'package:researchfin/models/candlestick_data_model.dart';
 
 class StockSymbolModel {
   StockSymbolModel({
-    required this.metaData,
+    // required this.metaData,
     required this.candlestickData,
   });
 
-  MetaDataModel metaData;
+  // MetaDataModel metaData;
   List<CandlestickDataModel> candlestickData;
-  // List<Temp> temp;
 
   factory StockSymbolModel.fromJson(Map<String, dynamic> json) => StockSymbolModel(
-    metaData: MetaDataModel.fromJson(json["Meta Data"]),
+    // metaData: MetaDataModel.fromJson(json.values.elementAt(0)),
     // candlestickData: Map.from(json["Time Series (Daily)"]).map((k, v) => MapEntry<String, CandlestickDataModel>(k, CandlestickDataModel.fromJson(k,v))),
-    candlestickData: Map.from(json["Time Series (Daily)"]).entries.map((element) => CandlestickDataModel.fromJson(element.key, element.value)).toList(),
+    candlestickData: List.from(Map.from(json.values.elementAt(1)).entries.map((element) => CandlestickDataModel.fromJson(element.key, element.value)).toList().reversed),
   );
 
   // Map<String, dynamic> toJson() => {

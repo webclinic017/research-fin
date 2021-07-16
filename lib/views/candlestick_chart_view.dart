@@ -18,27 +18,24 @@ class CandlestickChart extends StatefulWidget {
 }
 
 class _CandlestickChartState extends State<CandlestickChart> {
-  late double _candlestickWidth;
-  // _candlestickWidth : width of an individual candlestick
-  late double _previousCandlestickWidth;
-
-  late double _candlestickAxisWidth;
-  // _candlestickAreaWidth : width occupied by the candlesticks (excludes the width occupied by priceLabel of stock
-  double? _previousCandlestickAxisWidth;
-  // _previousCandlestickAxisWidth : previous value of DOUBLE _candlestickAxisWidth.
-
-  late double _startOffset;
   /*
-    _startOffset : x offset of the selected data
-    for e.g., out of total 180 datapoint, if one chooses to show only recent 90 datapoints,
-    this will store the calculated offset for the data ranging from (180 - 90 + 1) to 180 datapoints.
+    DOUBLE _candlestickWidth : width of an individual candlestick.
+    DOUBLE _previousCandlestickWidth : Duh!.
+    DOUBLE _startOffset : Offset of the data currently being displayed.
+    DOUBLE _previousStartOffset: Save the current value of DOUBLE _previousStartOffset before calculating new value.
+    OFFSET _tapPosition : Save the tap offset when user taps.
+    STOCKSYMBOLMODEL _stockSymbolModel : Save incoming time-interval based stock symbol data.
   */
-  late double _previousStartOffset;
 
-  // The position that user is currently tapping, null if user let go.
+  late double _candlestickWidth;
+  late double _startOffset;
+  late double _previousCandlestickWidth;
+  late double _previousStartOffset;
+  late Offset _initialFocalPoint;
+
   Offset? _tapPosition;
 
-  late Offset _initialFocalPoint;
+  double? _previousChartWidth;
 
   StockSymbolModel? stockSymbolModel;
   @override
@@ -55,35 +52,38 @@ class _CandlestickChartState extends State<CandlestickChart> {
     }
 
     return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
-      final Size drawableArea = constraints.biggest;
-      // drawableArea : area available to draw the chart.
+      final size = constraints.biggest;
+      final _timelineAxisWidth = size.width - PainterParams.priceLabelWidth;
+      _handleChartResize(_timelineAxisWidth);
 
-      _candlestickAxisWidth = drawableArea.width - PainterParams.priceLabelWidth;
-      // _candlestickAxisWidth = drawableArea.width;
+      // Find the visible data range
+      final int start = (_startOffset / _candlestickWidth).floor();
+      final int count = (_timelineAxisWidth / _candlestickWidth).ceil();
+      final int end = (start + count).clamp(start, stockSymbolModel!.candlestickData.length);
+      final visibleCandlestickRange = stockSymbolModel!.candlestickData.getRange(start, end).toList();
+      if (end < stockSymbolModel!.candlestickData.length) {
+        final nextItem = stockSymbolModel!.candlestickData[end];
+        visibleCandlestickRange.add(nextItem);
+      }
 
-      // late double previousCandlestickAxisWidth;
-      // // _previousCandlestickAxisWidth : store previous value of DOUBLE _candlestickAxisWidth.
+      // Find the horizontal shift needed when drawing the candles
+      final xShift = _candlestickWidth / 2 - (_startOffset - start * _candlestickWidth);
 
-      _handleChartResize(_candlestickAxisWidth);
+      // Calculate min and max among the visible data
+      final maxPrice =
+      visibleCandlestickRange.map((c) => c.high).whereType<double>().reduce(max);
+      final minPrice =
+      visibleCandlestickRange.map((c) => c.low).whereType<double>().reduce(min);
+      final maxVol =
+      visibleCandlestickRange.map((c) => c.volume).whereType<double>().reduce(max);
+      final minVol =
+      visibleCandlestickRange.map((c) => c.volume).whereType<double>().reduce(min);
 
-      // Isolating the 90 or less data points to be displayed. to create a list
-      // Should be done withing controller.
-      // final int startIndex = totalValues - 90 + 1;
-      // final int endIndex = totalValues - 1;
-
-      final double xShift = _candlestickWidth / 2;
-
-      // Calculate the min and max for price and volume
-      final maxPrice = stockSymbolModel!.candlestickData.map((c) => c.high).whereType<double>().reduce(max);
-      final minPrice = stockSymbolModel!.candlestickData.map((c) => c.low).whereType<double>().reduce(min);
-
-      final maxVol = stockSymbolModel!.candlestickData.map((c) => c.volume).whereType<double>().reduce(max);
-      final minVol = stockSymbolModel!.candlestickData.map((c) => c.volume).whereType<double>().reduce(min);
 
       return GestureDetector(
         // Tap and hold to view candle details
-        onTapDown: (tapDownDetails) {
-          setState(() => _tapPosition = tapDownDetails.localPosition);
+        onTapDown: (details) {
+          setState(() => _tapPosition = details.localPosition);
         },
         onTapCancel: () => setState(() => _tapPosition = null),
         onTapUp: (_) => setState(() => _tapPosition = null),
@@ -93,12 +93,12 @@ class _CandlestickChartState extends State<CandlestickChart> {
           _previousStartOffset = _startOffset;
           _initialFocalPoint = details.localFocalPoint;
         },
-        onScaleUpdate: (details) => _onScaleUpdate(details, _candlestickAxisWidth),
+        onScaleUpdate: (details) => _onScaleUpdate(details, _timelineAxisWidth),
         child: TweenAnimationBuilder(
           tween: PainterParamsTween(
             end: PainterParams(
-              candles: stockSymbolModel!.candlestickData,
-              size: drawableArea,
+              candles: visibleCandlestickRange,
+              size: size,
               candleWidth: _candlestickWidth,
               startOffset: _startOffset,
               maxPrice: maxPrice,
@@ -107,16 +107,15 @@ class _CandlestickChartState extends State<CandlestickChart> {
               minVol: minVol,
               xShift: xShift,
               tapPosition: _tapPosition,
-              // maLeading: maLeading,
-              // maTrailing: maTrailing,
             ),
           ),
+          // duration: Duration.zero,
           duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
           builder:
               (BuildContext context, PainterParams params, Widget? child) {
             return CustomPaint(
-              size: drawableArea,
+              size: size,
               painter: ChartPainter(params),
             );
           },
@@ -128,60 +127,13 @@ class _CandlestickChartState extends State<CandlestickChart> {
   // [BLOCK] Chart Size Calculation ----------------------------->|
 
   /*
-    FUNCTION _handleChartResize
-      Handles the size of the area where chart is being drawn and adjusts it when size changes.
-      Covers 3 conditions.
-      1. if DOUBLE _candlestickAxisWidth is unchanged, do nothing.
-      2. if DOUBLE _candlestickAxisWidth has changed, resize.
-      3. if its first build, calculate DOUBLE _candlestickWidth, DOUBLE _selectedDataStartOffset
-  */
-  _handleChartResize(double width) {
-    // Size is unchanged.
-    if (width == _previousCandlestickAxisWidth) return;
-    if (_previousCandlestickAxisWidth != null) {
-      // Re-clamp when size changes (e.g. screen rotation)
-      _candlestickWidth = _candlestickWidth.clamp(
-        _getMaxCandlestickWidth(width),
-        _getMinCandlestickWidth(width),
-      );
-      _startOffset = _startOffset.clamp(0, _getMaxStartOffset(width, _candlestickWidth));
-    } else {
-      // Default 90 datapoints chart. If data is shorter, we use the whole range.
-      final count = min(stockSymbolModel!.candlestickData.length, 90);
-      _candlestickWidth = width / count;
-      // Default show the latest available data, e.g. the most recent 90 datapoints.
-      _startOffset = (stockSymbolModel!.candlestickData.length - count) * _candlestickWidth;
-    }
-    _previousCandlestickAxisWidth = width;
-  }
-
-  /*
-    FUNCTION _getMaxCandlestickWidth
-    FUNCTION _getMinCandlestickWidth
-      Returns the min and max possible values for DOUBLE _candlestickWidth.
-      Used by FUNCTION _handleChartResize.
-  */
-  double _getMaxCandlestickWidth(double width) => width / stockSymbolModel!.candlestickData.length;
-
-  double _getMinCandlestickWidth(double width) => width / min(14, stockSymbolModel!.candlestickData.length);
-
-  /*
-    FUNCTION _getMaxSelectedDataStartOffset
-      Calculates DOUBLE _selectedDataStartOffset.
-      Used by FUNCTION _handleChartResize.
-  */
-  double _getMaxStartOffset(double width, double candlestickWidth) {
-    final count = width / candlestickWidth; // candlesticks of selected data points in the window
-    final start = stockSymbolModel!.candlestickData.length - count;
-    return max(0, candlestickWidth * start);
-  }
-
-  /*
     FUNCTION _onScaleUpdate
+      Handles the chart panning and zooming.
   */
   _onScaleUpdate(details, double width) {
     // Handle zoom
-    final candleWidth = (_previousCandlestickWidth * details.scale).clamp(_getMaxCandlestickWidth(width), _getMinCandlestickWidth(width));
+    final candleWidth = (_previousCandlestickWidth * details.scale)
+        .clamp(_getMaxCandleWidth(width), _getMinCandleWidth(width));
     final clampedScale = candleWidth / _previousCandlestickWidth;
     var startOffset = _previousStartOffset * clampedScale;
     // Handle pan
@@ -193,12 +145,60 @@ class _CandlestickChartState extends State<CandlestickChart> {
     final double currCount = width / _candlestickWidth;
     final zoomAdjustment = (currCount - prevCount) * _candlestickWidth;
     startOffset -= zoomAdjustment * focalPointFactor;
-    startOffset = startOffset.clamp(0, _getMaxStartOffset(width, candleWidth)) as double;
+    startOffset = startOffset.clamp(
+      0,
+      _getMaxStartOffset(width, candleWidth),
+    );
     // Apply changes
     setState(() {
       _candlestickWidth = candleWidth;
       _startOffset = startOffset;
     });
+  }
+
+  /*
+    FUNCTION _handleChartResize
+      Handles the size of the area where chart is being drawn and adjusts it when size changes.
+      Covers 2 conditions.
+      1. if DOUBLE _candlestickAxisWidth has changed(DOUBLE _startOffset need to be recalculated when 'Time Interval' is switched.), resize.
+      2. if its first build, calculate DOUBLE _candlestickWidth, DOUBLE _startOffset
+  */
+  _handleChartResize(double width) {
+    // if (w == _prevChartWidth) return;
+    if (_previousChartWidth != null) {
+      // Re-clamp when size changes (e.g. screen rotation)
+      _candlestickWidth = _candlestickWidth.clamp(
+        _getMaxCandleWidth(width),
+        _getMinCandleWidth(width),
+      );
+      _startOffset = _startOffset.clamp(
+        0,
+        _getMaxStartOffset(width, _candlestickWidth),
+      );
+    } else {
+      // Default 90 day chart. If data is shorter, we use the whole range.
+      final count = min(stockSymbolModel!.candlestickData.length, 90);
+      _candlestickWidth = width / count;
+      // Default show the latest available data, e.g. the most recent 90 days.
+      _startOffset = (stockSymbolModel!.candlestickData.length - count) * _candlestickWidth;
+    }
+    _previousChartWidth = width;
+  }
+
+  /*
+    FUNCTION _getMaxCandleWidth
+    FUNCTION _getMinCandleWidth
+    FUNCTION _getMaxStartOffset
+      Helper functions for FUNCTION _handleChartResize and FUNCTION _onScaleUpdate
+  */
+  double _getMaxCandleWidth(double width) => width / stockSymbolModel!.candlestickData.length;
+
+  double _getMinCandleWidth(double width) => width / min(14, stockSymbolModel!.candlestickData.length);
+
+  double _getMaxStartOffset(double width, double candleWidth) {
+    final count = width / candleWidth; // visible candles in the window
+    final start = stockSymbolModel!.candlestickData.length - count;
+    return max(0, candleWidth * start);
   }
 // Chart Size Calculation [END] ----------------------------->|
 }

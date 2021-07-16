@@ -21,8 +21,6 @@ class PainterParams {
   final double xShift;
 
   final Offset? tapPosition;
-  // final double? maLeading;
-  // final double? maTrailing;
 
   PainterParams({
     required this.candles,
@@ -35,8 +33,6 @@ class PainterParams {
     required this.minVol,
     required this.xShift,
     required this.tapPosition,
-    // required this.maLeading,
-    // required this.maTrailing,
   });
 
   double get chartWidth => size.width - priceLabelWidth; // width w/o labels
@@ -52,8 +48,7 @@ class PainterParams {
     return i;
   }
 
-  double fitPrice(double y) =>
-      priceHeight * (maxPrice - y) / (maxPrice - minPrice);
+  double fitPrice(double y) => priceHeight * (maxPrice - y) / (maxPrice - minPrice);
 
   double fitVolume(double y) {
     final gap = 12; // the gap between price bars and volume bars
@@ -64,8 +59,7 @@ class PainterParams {
   }
 
   static PainterParams lerp(PainterParams a, PainterParams b, double t) {
-    double lerpField(double getField(PainterParams p)) =>
-        lerpDouble(getField(a), getField(b), t)!;
+    double lerpField(double getField(PainterParams p)) => lerpDouble(getField(a), getField(b), t)!;
     return PainterParams(
       candles: b.candles,
       size: b.size,
@@ -77,8 +71,6 @@ class PainterParams {
       minVol: lerpField((p) => p.minVol),
       xShift: b.xShift,
       tapPosition: b.tapPosition,
-      // maLeading: b.maLeading,
-      // maTrailing: b.maTrailing,
     );
   }
 }

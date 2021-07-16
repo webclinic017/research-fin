@@ -17,8 +17,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // Future? status;
-
   late String _stockSymbol;
   late TextEditingController _stockSymbolController;
 
@@ -27,6 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final String _functionDaily = 'TIME_SERIES_DAILY';
   final String _functionWeekly = 'TIME_SERIES_WEEKLY';
   final String _functionMonthly = 'TIME_SERIES_MONTHLY';
+
+  late bool isValidSymbol;
 
   @override
   void initState() {
@@ -72,23 +72,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           maxLines: 1,
                           autofocus: true,
                           style: Theme.of(context).textTheme.headline6,
+                          textCapitalization: TextCapitalization.characters,
                           decoration: InputDecoration(
                             contentPadding: EdgeInsets.all(0.0),
                             border: InputBorder.none,
                             hintText: 'Search Stock Symbol',
                             hintStyle: Theme.of(context).textTheme.headline6?.copyWith(color: AppColor.stockWhite.withOpacity(0.5)),
                             errorBorder: InputBorder.none,
-                            errorStyle: Theme.of(context).textTheme.caption?.copyWith(color: AppColor.stockRed),
+                            errorStyle: Theme.of(context).textTheme.caption?.copyWith(color: AppColor.brightOrange),
                           ),
                           validator: (String? searchText) {
                             if (searchText!.isEmpty) {
                               // _errorMessage = 'Please enter a stock symbol!';
                               return 'Please enter a stock symbol!';
-                            } else if (searchText.toUpperCase().contains('IBM') == false) {
+                            } else if (isValidSymbol == false) {
                               return 'Invalid Symbol';
                             }
                           },
                           onFieldSubmitted: (searchText) async {
+                            isValidSymbol = await controllerFalse.isSymbolValid(searchText.toUpperCase());
+                            setState(() {});
                             if (_formKey.currentState!.validate()) {
                               late bool status;
                               status = await controllerFalse.getJsonViaHttp(searchText.toUpperCase(), _functionDaily);
@@ -111,6 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   AnnotationButton(
                     icon: Icons.search,
                     onTap: () async {
+                      isValidSymbol = await controllerFalse.isSymbolValid(_stockSymbolController.text.toUpperCase());
+                      setState(() {});
                       if (_formKey.currentState!.validate()) {
                         late bool status;
                         status = await controllerFalse.getJsonViaHttp(_stockSymbolController.text.toUpperCase(), _functionDaily);
@@ -174,9 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
               //       return Container(child: Text('error has occurred'));
               //     }
               //   },
-                // initialData: () {
-                //   Container(child: Text('data not available'));
-                // },
+              // initialData: () {
+              //   Container(child: Text('data not available'));
+              // },
               // ),
             ),
             // >>> Stock Symbol Chart [END] ------------->|
@@ -195,21 +200,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   TimeIntervalButton(
                     label: 'DAILY',
                     onTap: () {
-                      // TODO : Toggle graph values based on time interval selected
+                      controllerFalse.setFunction(_functionDaily);
                     },
                   ),
                   // SizedBox(width: 24.0),
                   TimeIntervalButton(
                     label: 'WEEKLY',
                     onTap: () {
-                      // TODO : Toggle graph values based on time interval selected
+                      controllerFalse.setFunction(_functionWeekly);
                     },
                   ),
                   // SizedBox(width: 24.0),
                   TimeIntervalButton(
                     label: 'MONTHLY',
                     onTap: () {
-                      // TODO : Toggle graph values based on time interval selected
+                      controllerFalse.setFunction(_functionMonthly);
                     },
                   ),
                 ],
