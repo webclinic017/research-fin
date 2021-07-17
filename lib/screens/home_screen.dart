@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:researchfin/theme/colors.dart';
 import 'package:researchfin/views/candlestick_chart_view.dart';
-import 'package:researchfin/widgets/time_interval_button.dart';
-import 'package:researchfin/widgets/annotation_tool_button.dart';
+import 'package:researchfin/widgets/neo_square_button.dart';
 import 'package:researchfin/controller/controller.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,13 +26,15 @@ class _HomeScreenState extends State<HomeScreen> {
   final String _functionMonthly = 'TIME_SERIES_MONTHLY';
 
   late bool isValidSymbol;
+  late bool showTimeInterval;
 
   @override
   void initState() {
     super.initState();
 
-    _stockSymbol = '---';
+    _stockSymbol = '---.--';
     _stockSymbolController = TextEditingController(text: '');
+    showTimeInterval = true;
   }
 
   @override
@@ -54,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // crossAxisAlignment: CrossAxisAlignment.start,
           padding: EdgeInsets.symmetric(horizontal: 24.0),
           // shrinkWrap: true,
+          physics: controller.drawAnnotation ? NeverScrollableScrollPhysics() : ClampingScrollPhysics(),
           children: [
             SizedBox(height: 16.0),
             // >>> [BLOCK] Search Bar ------------------------>|
@@ -111,8 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   SizedBox(width: 16.0),
-                  AnnotationButton(
-                    icon: Icons.search,
+                  NeoSquareButton(
                     onTap: () async {
                       isValidSymbol = await controllerFalse.isSymbolValid(_stockSymbolController.text.toUpperCase());
                       setState(() {});
@@ -130,6 +131,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       }
                     },
+                    width: 56.0,
+                    height: 56.0,
+                    child: Icon(
+                      Icons.search,
+                      color: AppColor.stockWhite,
+                      size: 24.0,
+                    ),
                   ),
                 ],
               ),
@@ -168,92 +176,122 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               // >>> Candlestick Chart Widget --------------------->|
               child: CandlestickChart(),
-              // child: FutureBuilder(
-              //   future: controllerFalse.getJsonViaHttp(_stockSymbolController.text.toUpperCase(), _functionDaily),
-              //   builder: (BuildContext context, AsyncSnapshot snapshot) {
-              //     if (snapshot.connectionState == ConnectionState.active) {
-              //       return CircularProgressIndicator();
-              //     } else if (snapshot.hasData) {
-              //       return Container(child: Text('data fetched'));
-              //     } else {
-              //       return Container(child: Text('error has occurred'));
-              //     }
-              //   },
-              // initialData: () {
-              //   Container(child: Text('data not available'));
-              // },
-              // ),
             ),
             // >>> Stock Symbol Chart [END] ------------->|
-            SizedBox(height: 32.0),
-            // >>> [BLOCK] Time Interval Section ------------->|
-            Text(
-              'Time Interval',
-              style: Theme.of(context).textTheme.headline6,
-            ),
-            SizedBox(height: 16.0),
-            SizedBox(
-              child: Wrap(
-                spacing: 24.0,
-                runSpacing: 24.0,
-                children: [
-                  TimeIntervalButton(
-                    label: 'DAILY',
-                    onTap: () {
-                      controllerFalse.setFunction(_functionDaily);
-                    },
-                  ),
-                  // SizedBox(width: 24.0),
-                  TimeIntervalButton(
-                    label: 'WEEKLY',
-                    onTap: () {
-                      controllerFalse.setFunction(_functionWeekly);
-                    },
-                  ),
-                  // SizedBox(width: 24.0),
-                  TimeIntervalButton(
-                    label: 'MONTHLY',
-                    onTap: () {
-                      controllerFalse.setFunction(_functionMonthly);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            // >>> Time Interval Section [END] ------------->|
-            SizedBox(height: 32.0),
-            // >>> [BLOCK] Annotation Tools Section ------------->|
-            Text(
-              'Annotation Tools',
-              style: Theme.of(context).textTheme.headline6,
-            ),
-            SizedBox(height: 16.0),
-            SizedBox(
-              // height: 40.0,
-              child: Row(
-                children: [
-                  AnnotationButton(
-                    icon: Icons.edit,
-                    onTap: () {
-                      // TODO : Toggle annotation on/off
-                    },
-                  ),
-                  SizedBox(width: 32.0),
-                  AnnotationButton(
-                    icon: Icons.edit_off,
-                    onTap: () {
-                      // TODO : Toggle annotation on/off
-                    },
-                  ),
-                  SizedBox(width: 32.0),
-                  AnnotationButton(
-                    icon: Icons.visibility,
-                    onTap: () {
-                      // TODO : Toggle annotation on/off
-                    },
-                  ),
-                ],
-              ),
+            SizedBox(height: 40.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                showTimeInterval
+                    ? SizedBox(
+                        child: Row(
+                          children: [
+                            NeoSquareButton(
+                              onTap: () {
+                                controllerFalse.setFunction(_functionDaily);
+                              },
+                              child: Text(
+                                'D',
+                                style: Theme.of(context).textTheme.subtitle2!.copyWith(
+                                      color: controller.function.contains('DAILY') ? AppColor.stockGreen : AppColor.stockWhite,
+                                    ),
+                              ),
+                            ),
+                            SizedBox(width: 24.0),
+                            NeoSquareButton(
+                              onTap: () {
+                                controllerFalse.setFunction(_functionWeekly);
+                              },
+                              child: Text(
+                                'W',
+                                style: Theme.of(context).textTheme.subtitle2!.copyWith(
+                                      color: controller.function.contains('WEEKLY') ? AppColor.stockGreen : AppColor.stockWhite,
+                                    ),
+                              ),
+                            ),
+                            SizedBox(width: 24.0),
+                            NeoSquareButton(
+                              onTap: () {
+                                controllerFalse.setFunction(_functionMonthly);
+                              },
+                              child: Text(
+                                'M',
+                                style: Theme.of(context).textTheme.subtitle2!.copyWith(
+                                      color: controller.function.contains('MONTHLY') ? AppColor.stockGreen : AppColor.stockWhite,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : NeoSquareButton(
+                        onTap: () {
+                          if (controller.drawAnnotation == false) {
+                            setState(() {
+                              showTimeInterval = true;
+                            });
+                          }
+                        },
+                        child: Icon(
+                          Icons.timeline_outlined,
+                          color: AppColor.stockWhite,
+                          size: 24.0,
+                        ),
+                      ),
+                showTimeInterval
+                    ? NeoSquareButton(
+                        onTap: () {
+                          setState(() {
+                            showTimeInterval = false;
+                          });
+                        },
+                        child: Icon(
+                          Icons.edit,
+                          color: controller.drawAnnotation ? AppColor.stockOrange : AppColor.stockWhite,
+                          size: 24.0,
+                        ),
+                      )
+                    : SizedBox(
+                        child: Row(
+                          children: [
+                            NeoSquareButton(
+                              onTap: () {
+                                controllerFalse.changeAnnotationState();
+                              },
+                              child: Icon(
+                                Icons.edit,
+                                color: controller.drawAnnotation ? AppColor.stockOrange : AppColor.stockWhite,
+                                size: 24.0,
+                              ),
+                            ),
+                            SizedBox(width: 24.0),
+                            NeoSquareButton(
+                              onTap: () {
+                                if (controller.annoOffsets.isNotEmpty) {
+                                  controllerFalse.clearOffsets();
+                                }
+                              },
+                              child: Icon(
+                                Icons.clear,
+                                color: controller.annoOffsets.isEmpty ? Colors.white30 : AppColor.stockWhite,
+                                size: 24.0,
+                              ),
+                            ),
+                            SizedBox(width: 24.0),
+                            NeoSquareButton(
+                              onTap: () {
+                                controllerFalse.toggleVisibility();
+                              },
+                              child: Icon(
+                                Icons.visibility,
+                                color: controller.showAnnotation ? AppColor.stockOrange : AppColor.stockWhite,
+                                size: 24.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ],
             ),
             SizedBox(height: 32.0),
           ],

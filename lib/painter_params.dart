@@ -19,8 +19,10 @@ class PainterParams {
   final double maxVol;
   final double minVol;
   final double xShift;
+  // final bool isAnnotationEnabled;
 
   final Offset? tapPosition;
+  // final List<Offset> anoteOffsets;
 
   PainterParams({
     required this.candles,
@@ -33,6 +35,8 @@ class PainterParams {
     required this.minVol,
     required this.xShift,
     required this.tapPosition,
+    // required this.anoteOffsets,
+    // required this.isAnnotationEnabled,
   });
 
   double get chartWidth => size.width - priceLabelWidth; // width w/o labels

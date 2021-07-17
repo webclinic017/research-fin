@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -6,13 +7,24 @@ import 'package:http/http.dart' as http;
 import 'package:researchfin/models/stock_symbol_model.dart';
 
 class Controller with ChangeNotifier {
-  late http.Response responseDaily, responseWeekly, responseMonthly, responseSymbol;
+  double _startOffset = 0.0;
 
   String _function = 'not_specified';
 
+  List<Offset> _annoOffsets = [];
+
   StockSymbolModel? _stockSymbolModel;
+  late http.Response responseDaily, responseWeekly, responseMonthly, responseSymbol;
+  
+  bool _drawAnnotation = false;
+  bool _showAnnotation = false;
 
   String get function => _function;
+
+  List<Offset> get annoOffsets => _annoOffsets;
+
+  bool get drawAnnotation => _drawAnnotation;
+  bool get showAnnotation => _showAnnotation;
 
   Future<bool> getJsonViaHttp(String stockSymbol, String function) async {
     Uri daily = Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockSymbol&outputsize=full&apikey=Y9JVN150E7U3U6ZV');
@@ -89,5 +101,45 @@ class Controller with ChangeNotifier {
       print('Error in retrieving symbol: $e');
       return false;
     }
+  }
+
+  void changeAnnotationState() {
+    if(_drawAnnotation == false) {
+      _drawAnnotation = true;
+    } else {
+      if(_annoOffsets.isNotEmpty) {
+        _annoOffsets.forEach((element) => element = Offset(_startOffset + element.dx, element.dy) );
+        // TODO : Write to disk here.
+      }
+      _drawAnnotation = false;
+    }
+
+    notifyListeners();
+  }
+
+  void toggleVisibility() {
+    if(_showAnnotation == false) {
+      _showAnnotation = true;
+    } else {
+      _showAnnotation = false;
+    }
+
+    notifyListeners();
+  }
+
+  void addOffset(Offset offset) {
+    _annoOffsets.add(offset);
+
+    notifyListeners();
+  }
+
+  void clearOffsets() {
+    _annoOffsets.clear();
+
+    notifyListeners();
+  }
+  
+  void updateStartOffset(double dx) {
+    _startOffset = dx;
   }
 }

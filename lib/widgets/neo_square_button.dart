@@ -4,16 +4,18 @@ import 'package:provider/provider.dart';
 import 'package:researchfin/theme/colors.dart';
 import 'package:researchfin/controller/controller.dart';
 
-class TimeIntervalButton extends StatefulWidget {
-  final String label;
+class NeoSquareButton extends StatefulWidget {
   final Function()? onTap;
+  final Widget child;
+  final double? width;
+  final double? height;
 
-  TimeIntervalButton({required this.label, this.onTap});
+  NeoSquareButton({this.onTap, required this.child, this.width, this.height});
   @override
-  _TimeIntervalButtonState createState() => _TimeIntervalButtonState();
+  _NeoSquareButtonState createState() => _NeoSquareButtonState();
 }
 
-class _TimeIntervalButtonState extends State<TimeIntervalButton> {
+class _NeoSquareButtonState extends State<NeoSquareButton> {
   bool _isTapped = false;
 
   late Controller controller;
@@ -33,10 +35,13 @@ class _TimeIntervalButtonState extends State<TimeIntervalButton> {
         });
       },
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 20.0),
+        alignment: Alignment.center,
+        width: widget.width ?? 48.0,
+        height: widget.height ?? 48.0,
+        padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
         decoration: BoxDecoration(
           color: AppColor.stockBlack,
-          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
           boxShadow: _isTapped
               ? []
               : [
@@ -54,12 +59,7 @@ class _TimeIntervalButtonState extends State<TimeIntervalButton> {
                   ),
                 ],
         ),
-        child: Text(
-          widget.label,
-          style: Theme.of(context).textTheme.subtitle2!.copyWith(
-                color: controller.function.contains(widget.label) ? AppColor.stockGreen : AppColor.stockWhite,
-              ),
-        ),
+        child: widget.child,
       ),
     );
   }

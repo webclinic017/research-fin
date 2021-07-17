@@ -32,15 +32,23 @@ class _CandlestickChartState extends State<CandlestickChart> {
   late double _previousCandlestickWidth;
   late double _previousStartOffset;
   late Offset _initialFocalPoint;
+  // late bool isAnnotationEnabled;
 
   Offset? _tapPosition;
 
   double? _previousChartWidth;
 
   StockSymbolModel? stockSymbolModel;
+
+  // List<Offset> _anoteOffsets = [];
+
+  late Controller controller, controllerFalse;
+
   @override
   Widget build(BuildContext context) {
     stockSymbolModel = Provider.of<Controller>(context).stockSymbolModel;
+    controller = Provider.of<Controller>(context);
+    controllerFalse = Provider.of<Controller>(context, listen: false);
 
     if (stockSymbolModel == null) {
       return Center(
@@ -70,30 +78,42 @@ class _CandlestickChartState extends State<CandlestickChart> {
       final xShift = _candlestickWidth / 2 - (_startOffset - start * _candlestickWidth);
 
       // Calculate min and max among the visible data
-      final maxPrice =
-      visibleCandlestickRange.map((c) => c.high).whereType<double>().reduce(max);
-      final minPrice =
-      visibleCandlestickRange.map((c) => c.low).whereType<double>().reduce(min);
-      final maxVol =
-      visibleCandlestickRange.map((c) => c.volume).whereType<double>().reduce(max);
-      final minVol =
-      visibleCandlestickRange.map((c) => c.volume).whereType<double>().reduce(min);
-
+      final maxPrice = visibleCandlestickRange.map((c) => c.high).whereType<double>().reduce(max);
+      final minPrice = visibleCandlestickRange.map((c) => c.low).whereType<double>().reduce(min);
+      final maxVol = visibleCandlestickRange.map((c) => c.volume).whereType<double>().reduce(max);
+      final minVol = visibleCandlestickRange.map((c) => c.volume).whereType<double>().reduce(min);
 
       return GestureDetector(
         // Tap and hold to view candle details
         onTapDown: (details) {
-          setState(() => _tapPosition = details.localPosition);
+          if (controller.drawAnnotation) {
+            controllerFalse.addOffset(details.localPosition);
+          } else {
+            setState(() => _tapPosition = details.localPosition);
+          }
         },
         onTapCancel: () => setState(() => _tapPosition = null),
         onTapUp: (_) => setState(() => _tapPosition = null),
         // Pan and zoom
         onScaleStart: (details) {
-          _previousCandlestickWidth = _candlestickWidth;
-          _previousStartOffset = _startOffset;
-          _initialFocalPoint = details.localFocalPoint;
+          if (controller.drawAnnotation) {
+            setState(() {
+              controllerFalse.addOffset(details.localFocalPoint);
+            });
+          } else {
+            _previousCandlestickWidth = _candlestickWidth;
+            _previousStartOffset = _startOffset;
+            _initialFocalPoint = details.localFocalPoint;
+          }
         },
-        onScaleUpdate: (details) => _onScaleUpdate(details, _timelineAxisWidth),
+        onScaleUpdate: (details) => _onScaleUpdate(details, _timelineAxisWidth, controller.drawAnnotation),
+        onScaleEnd: (details) {
+          if (controller.drawAnnotation) {
+            setState(() {
+              controllerFalse.addOffset(Offset.zero);
+            });
+          }
+        },
         child: TweenAnimationBuilder(
           tween: PainterParamsTween(
             end: PainterParams(
@@ -107,16 +127,17 @@ class _CandlestickChartState extends State<CandlestickChart> {
               minVol: minVol,
               xShift: xShift,
               tapPosition: _tapPosition,
+              // anoteOffsets: _anoteOffsets,
+              // isAnnotationEnabled: controller.isAnnotationEnabled,
             ),
           ),
           // duration: Duration.zero,
           duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
-          builder:
-              (BuildContext context, PainterParams params, Widget? child) {
+          builder: (BuildContext context, PainterParams params, Widget? child) {
             return CustomPaint(
               size: size,
-              painter: ChartPainter(params),
+              painter: ChartPainter(params, controller.annoOffsets, controller.drawAnnotation, controller.showAnnotation),
             );
           },
         ),
@@ -130,30 +151,35 @@ class _CandlestickChartState extends State<CandlestickChart> {
     FUNCTION _onScaleUpdate
       Handles the chart panning and zooming.
   */
-  _onScaleUpdate(details, double width) {
-    // Handle zoom
-    final candleWidth = (_previousCandlestickWidth * details.scale)
-        .clamp(_getMaxCandleWidth(width), _getMinCandleWidth(width));
-    final clampedScale = candleWidth / _previousCandlestickWidth;
-    var startOffset = _previousStartOffset * clampedScale;
-    // Handle pan
-    final dx = (details.localFocalPoint - _initialFocalPoint).dx * -1;
-    startOffset += dx;
-    // Adjust pan when zooming
-    final focalPointFactor = details.localFocalPoint.dx / width;
-    final double prevCount = width / _previousCandlestickWidth;
-    final double currCount = width / _candlestickWidth;
-    final zoomAdjustment = (currCount - prevCount) * _candlestickWidth;
-    startOffset -= zoomAdjustment * focalPointFactor;
-    startOffset = startOffset.clamp(
-      0,
-      _getMaxStartOffset(width, candleWidth),
-    );
-    // Apply changes
-    setState(() {
-      _candlestickWidth = candleWidth;
-      _startOffset = startOffset;
-    });
+  _onScaleUpdate(ScaleUpdateDetails details, double width, bool isAnnotationEnabled) {
+    if (isAnnotationEnabled) {
+      setState(() {
+        controllerFalse.addOffset(details.localFocalPoint);
+      });
+    } else {
+      // Handle zoom
+      final candleWidth = (_previousCandlestickWidth * details.scale).clamp(_getMaxCandleWidth(width), _getMinCandleWidth(width));
+      final clampedScale = candleWidth / _previousCandlestickWidth;
+      var startOffset = _previousStartOffset * clampedScale;
+      // Handle pan
+      final dx = (details.localFocalPoint - _initialFocalPoint).dx * -1;
+      startOffset += dx;
+      // Adjust pan when zooming
+      final focalPointFactor = details.localFocalPoint.dx / width;
+      final double prevCount = width / _previousCandlestickWidth;
+      final double currCount = width / _candlestickWidth;
+      final zoomAdjustment = (currCount - prevCount) * _candlestickWidth;
+      startOffset -= zoomAdjustment * focalPointFactor;
+      startOffset = startOffset.clamp(
+        0,
+        _getMaxStartOffset(width, candleWidth),
+      );
+      // Apply changes
+      setState(() {
+        _candlestickWidth = candleWidth;
+        _startOffset = startOffset;
+      });
+    }
   }
 
   /*
@@ -175,12 +201,15 @@ class _CandlestickChartState extends State<CandlestickChart> {
         0,
         _getMaxStartOffset(width, _candlestickWidth),
       );
+
+      controllerFalse.updateStartOffset(_startOffset);
     } else {
-      // Default 90 day chart. If data is shorter, we use the whole range.
-      final count = min(stockSymbolModel!.candlestickData.length, 90);
+      // Default 30 day chart. If data is shorter, we use the whole range.
+      final count = min(stockSymbolModel!.candlestickData.length, 30);
       _candlestickWidth = width / count;
       // Default show the latest available data, e.g. the most recent 90 days.
       _startOffset = (stockSymbolModel!.candlestickData.length - count) * _candlestickWidth;
+      controllerFalse.updateStartOffset(_startOffset);
     }
     _previousChartWidth = width;
   }

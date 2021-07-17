@@ -1,4 +1,4 @@
-import 'package:researchfin/models/meta_data_model.dart';
+// import 'package:researchfin/models/meta_data_model.dart';
 import 'package:researchfin/models/candlestick_data_model.dart';
 
 class StockSymbolModel {

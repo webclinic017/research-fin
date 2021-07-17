@@ -1,16 +1,20 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:researchfin/theme/colors.dart';
 
-// import 'candle_data.dart';
 import 'models/candlestick_data_model.dart';
 import 'painter_params.dart';
 
 class ChartPainter extends CustomPainter {
   final PainterParams params;
+  final List<Offset> offsets;
+  final bool isAnnotationEnabled;
+  final bool showAnnotation;
 
-  ChartPainter(this.params);
+  ChartPainter(this.params, this.offsets, this.isAnnotationEnabled, this.showAnnotation);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -18,7 +22,7 @@ class ChartPainter extends CustomPainter {
     _drawDateLabels(canvas, params);
     _drawPriceGridAndLabels(canvas, params);
 
-    // Draw prices, volumes & moving averages
+    // Draw prices, volumes
     canvas.save();
     canvas.clipRect(Offset.zero & Size(params.chartWidth, params.chartHeight));
     // canvas.drawRect(
@@ -30,6 +34,14 @@ class ChartPainter extends CustomPainter {
     for (int i = 0; i < params.candles.length; i++) {
       _drawSingleDay(canvas, params, i);
     }
+
+    if (showAnnotation) {
+      _drawOldAnnotations(canvas);
+    }
+
+    if (isAnnotationEnabled){
+      _drawFreshAnnotation(canvas);
+    }
     canvas.restore();
 
     // Draw tap highlight & overlay
@@ -40,17 +52,42 @@ class ChartPainter extends CustomPainter {
     }
   }
 
-  void _drawDateLabels(canvas, PainterParams params) {
+  void _drawOldAnnotations(Canvas canvas) {
+    // TODO : Logic
+  }
+
+  void _drawFreshAnnotation(Canvas canvas) {
+      // Draw annotations
+      final anotePaint = Paint()
+        ..color = AppColor.stockOrange
+        ..isAntiAlias = true
+        ..strokeWidth = 2.0;
+      // canvas.drawPoints(PointMode.points, [offsets[0]], anotePaint);
+      // for (var i = 1 ; i < offsets.length ; i++) {
+      //   if (offsets[i] != Offset.zero && offsets[i - 1] != Offset.zero) {
+      //     canvas.drawLine(offsets[i - 1], offsets[i], anotePaint);
+      //   }
+      //   else if (offsets[i] != Offset.zero) {
+      //     canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
+      //   }
+      // }
+      for (var i = 0 ; i < offsets.length - 1 ; i++) {
+        if (offsets[i] != Offset.zero && offsets[i + 1] != Offset.zero) {
+          canvas.drawLine(offsets[i], offsets[i + 1], anotePaint);
+        }
+        else if (offsets[i] != Offset.zero && offsets[i + 1] == Offset.zero) {
+          canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
+        }
+      }
+  }
+
+  void _drawDateLabels(Canvas canvas, PainterParams params) {
     // final count = params.candles.length;
 
     String getDate(DateTime timestamp) {
-      // final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000).toIso8601String().split("T").first.split("-");
       final date = '${timestamp.month}/${timestamp.day}';
-      // if (count < 20) return "${date[1]}-${date[2]}"; // mm-dd
-      // return "${date[0]}-${date[1]}"; // yyyy-mm
       return date;
     }
-
 
     final lineCount = params.chartWidth ~/ 90;
     final gap = 1 / (lineCount + 1);
@@ -109,10 +146,6 @@ class ChartPainter extends CustomPainter {
     final x = i * params.candleWidth;
     final thickWidth = max(params.candleWidth * 0.8, 0.8);
     final thinWidth = max(params.candleWidth * 0.2, 0.2);
-    // final maPaint = Paint() // paint used for moving average
-    //   ..strokeWidth = 2.0
-    //   ..strokeCap = StrokeCap.round
-    //   ..color = Colors.blue;
     // Draw price bar
     final open = candle.open;
     final close = candle.close;
@@ -137,43 +170,13 @@ class ChartPainter extends CustomPainter {
     // Draw volume bar
     final volume = candle.volume;
     // if (volume != null) {
-      canvas.drawLine(
-        Offset(x, params.chartHeight),
-        Offset(x, params.fitVolume(volume)),
-        Paint()
-          ..strokeWidth = thickWidth
-          ..color = Colors.grey,
-      );
-    // }
-    // Draw average line
-    // final ma = candle.priceMA;
-    // final prevMa = params.candles.at(i - 1)?.priceMA;
-    // if (ma != null && prevMa != null) {
-    //   canvas.drawLine(
-    //     Offset(x - params.candleWidth, params.fitPrice(prevMa)),
-    //     Offset(x, params.fitPrice(ma)),
-    //     maPaint,
-    //   );
-    // }
-    // if (i == 0) {
-    //   // In the front, draw an extra line connecting to out-of-window data
-    //   if (ma != null && params.maLeading != null) {
-    //     canvas.drawLine(
-    //       Offset(x - params.candleWidth, params.fitPrice(params.maLeading!)),
-    //       Offset(x, params.fitPrice(ma)),
-    //       maPaint,
-    //     );
-    //   }
-    // } else if (i == params.candles.length - 1) {
-    //   // At the end, draw an extra line connecting to out-of-window data
-    //   if (ma != null && params.maTrailing != null) {
-    //     canvas.drawLine(
-    //       Offset(x, params.fitPrice(ma)),
-    //       Offset(x + params.candleWidth, params.fitPrice(params.maTrailing!)),
-    //       maPaint,
-    //     );
-    //   }
-    // }
+    canvas.drawLine(
+      Offset(x, params.chartHeight),
+      Offset(x, params.fitVolume(volume)),
+      Paint()
+        ..strokeWidth = thickWidth
+        ..color = Colors.grey,
+    );
   }
 
   void _drawTapHighlightAndOverlay(canvas, PainterParams params) {
@@ -194,7 +197,7 @@ class ChartPainter extends CustomPainter {
     _drawTapInfoOverlay(canvas, params, candle);
   }
 
-  void _drawTapInfoOverlay(canvas, PainterParams params, CandlestickDataModel candle) {
+  void _drawTapInfoOverlay(Canvas canvas, PainterParams params, CandlestickDataModel candle) {
     final Color textColor = Colors.grey[200]!;
     final Color panelBgColor = Colors.grey[600]!.withOpacity(0.9);
     final xGap = 8.0;
@@ -247,7 +250,6 @@ class ChartPainter extends CustomPainter {
         pos.dy - panelHeight - 48,
       ); // panel on the left
     }
-
 
     // Paint overlay panel and texts
     canvas.drawRRect(
