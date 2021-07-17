@@ -11,10 +11,11 @@ import 'painter_params.dart';
 class ChartPainter extends CustomPainter {
   final PainterParams params;
   final List<Offset> offsets;
+  final List<Offset> oldOffsets;
   final bool isAnnotationEnabled;
   final bool showAnnotation;
 
-  ChartPainter(this.params, this.offsets, this.isAnnotationEnabled, this.showAnnotation);
+  ChartPainter(this.params, this.offsets, this.isAnnotationEnabled, this.showAnnotation, this.oldOffsets);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -25,21 +26,16 @@ class ChartPainter extends CustomPainter {
     // Draw prices, volumes
     canvas.save();
     canvas.clipRect(Offset.zero & Size(params.chartWidth, params.chartHeight));
-    // canvas.drawRect(
-    //   // apply yellow tint to clipped area (for debugging)
-    //   Offset.zero & Size(params.chartWidth, params.chartHeight),
-    //   Paint()..color = Colors.yellow[100]!,
-    // );
     canvas.translate(params.xShift, 0);
     for (int i = 0; i < params.candles.length; i++) {
       _drawSingleDay(canvas, params, i);
     }
 
-    if (showAnnotation) {
-      _drawOldAnnotations(canvas);
+    if (showAnnotation && oldOffsets.isNotEmpty) {
+      _drawOldAnnotations(canvas, oldOffsets);
     }
 
-    if (isAnnotationEnabled){
+    if (isAnnotationEnabled) {
       _drawFreshAnnotation(canvas);
     }
     canvas.restore();
@@ -52,33 +48,49 @@ class ChartPainter extends CustomPainter {
     }
   }
 
-  void _drawOldAnnotations(Canvas canvas) {
-    // TODO : Logic
+  void _drawOldAnnotations(Canvas canvas, List<Offset> oldOffsets) {
+    final oldAnnotePaint = Paint()
+      ..color = AppColor.stockOrange
+      ..isAntiAlias = true
+      ..strokeWidth = 2.0;
+
+    oldOffsets.forEach((element) {
+      element = Offset(element.dx - params.startOffset, element.dx);
+    });
+
+    for (var i = 0; i < oldOffsets.length - 1; i++) {
+      if (oldOffsets[i].dx >= params.startOffset && oldOffsets[i].dx <= params.chartWidth) {
+        if (oldOffsets[i] != Offset.zero && oldOffsets[i + 1] != Offset.zero) {
+          canvas.drawLine(oldOffsets[i], oldOffsets[i + 1], oldAnnotePaint);
+        } else if (oldOffsets[i] != Offset.zero && oldOffsets[i + 1] == Offset.zero) {
+          canvas.drawPoints(PointMode.points, [oldOffsets[i]], oldAnnotePaint);
+        }
+      }
+    }
   }
 
   void _drawFreshAnnotation(Canvas canvas) {
-      // Draw annotations
-      final anotePaint = Paint()
-        ..color = AppColor.stockOrange
-        ..isAntiAlias = true
-        ..strokeWidth = 2.0;
-      // canvas.drawPoints(PointMode.points, [offsets[0]], anotePaint);
-      // for (var i = 1 ; i < offsets.length ; i++) {
-      //   if (offsets[i] != Offset.zero && offsets[i - 1] != Offset.zero) {
-      //     canvas.drawLine(offsets[i - 1], offsets[i], anotePaint);
-      //   }
-      //   else if (offsets[i] != Offset.zero) {
-      //     canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
-      //   }
-      // }
-      for (var i = 0 ; i < offsets.length - 1 ; i++) {
-        if (offsets[i] != Offset.zero && offsets[i + 1] != Offset.zero) {
-          canvas.drawLine(offsets[i], offsets[i + 1], anotePaint);
-        }
-        else if (offsets[i] != Offset.zero && offsets[i + 1] == Offset.zero) {
-          canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
-        }
+    // Draw annotations
+    final anotePaint = Paint()
+      ..color = AppColor.stockOrange
+      ..isAntiAlias = true
+      ..strokeWidth = 2.0;
+    // canvas.drawPoints(PointMode.points, [offsets[0]], anotePaint);
+    // for (var i = 1 ; i < offsets.length ; i++) {
+    //   if (offsets[i] != Offset.zero && offsets[i - 1] != Offset.zero) {
+    //     canvas.drawLine(offsets[i - 1], offsets[i], anotePaint);
+    //   }
+    //   else if (offsets[i] != Offset.zero) {
+    //     canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
+    //   }
+    // }
+    for (var i = 0; i < offsets.length - 1; i++) {
+      if (offsets[i] != Offset.zero && offsets[i + 1] != Offset.zero) {
+        canvas.drawLine(offsets[i], offsets[i + 1], anotePaint);
+      } else if (offsets[i] != Offset.zero && offsets[i + 1] == Offset.zero) {
+        canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
       }
+    }
   }
 
   void _drawDateLabels(Canvas canvas, PainterParams params) {

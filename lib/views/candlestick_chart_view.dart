@@ -137,7 +137,7 @@ class _CandlestickChartState extends State<CandlestickChart> {
           builder: (BuildContext context, PainterParams params, Widget? child) {
             return CustomPaint(
               size: size,
-              painter: ChartPainter(params, controller.annoOffsets, controller.drawAnnotation, controller.showAnnotation),
+              painter: ChartPainter(params, controller.annoOffsets, controller.drawAnnotation, controller.showAnnotation, controller.getOldOffsets()),
             );
           },
         ),

@@ -5,6 +5,7 @@ import 'package:researchfin/theme/colors.dart';
 import 'package:researchfin/views/candlestick_chart_view.dart';
 import 'package:researchfin/widgets/neo_square_button.dart';
 import 'package:researchfin/controller/controller.dart';
+import 'package:hive/hive.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -41,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _stockSymbolController.dispose();
 
+    // Close the hive box
+    Hive.close();
     super.dispose();
   }
 
