@@ -6,9 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:researchfin/controller/controller.dart';
 import 'package:researchfin/models/stock_symbol_model.dart';
 
-import 'package:researchfin/painter_params.dart';
+import 'package:researchfin/painter/painter_params.dart';
 
-import '../chart_painter.dart';
+import '../painter/chart_painter.dart';
 
 class CandlestickChart extends StatefulWidget {
   CandlestickChart({Key? key}) : super(key: key);
@@ -110,7 +110,7 @@ class _CandlestickChartState extends State<CandlestickChart> {
         onScaleEnd: (details) {
           if (controller.drawAnnotation) {
             setState(() {
-              controllerFalse.addOffset(Offset.zero);
+              controllerFalse.addOffset(Offset.infinite);
             });
           }
         },

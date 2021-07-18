@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import 'models/candlestick_data_model.dart';
+import '../models/candlestick_data_model.dart';
 
 class PainterParams {
   static const double volumeHeightFactor = 0.2;
@@ -35,8 +35,6 @@ class PainterParams {
     required this.minVol,
     required this.xShift,
     required this.tapPosition,
-    // required this.anoteOffsets,
-    // required this.isAnnotationEnabled,
   });
 
   double get chartWidth => size.width - priceLabelWidth; // width w/o labels

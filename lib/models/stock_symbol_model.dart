@@ -12,7 +12,6 @@ class StockSymbolModel {
 
   factory StockSymbolModel.fromJson(Map<String, dynamic> json) => StockSymbolModel(
     // metaData: MetaDataModel.fromJson(json.values.elementAt(0)),
-    // candlestickData: Map.from(json["Time Series (Daily)"]).map((k, v) => MapEntry<String, CandlestickDataModel>(k, CandlestickDataModel.fromJson(k,v))),
     candlestickData: List.from(Map.from(json.values.elementAt(1)).entries.map((element) => CandlestickDataModel.fromJson(element.key, element.value)).toList().reversed),
   );
 

@@ -9,28 +9,42 @@ import 'package:researchfin/models/stock_symbol_model.dart';
 import 'package:researchfin/models/symbol_annotation.dart';
 
 class Controller with ChangeNotifier {
+  bool _drawAnnotation = false;
+  bool _showAnnotation = false;
   double _startOffset = 0.0;
-
-  // String _function = 'not_specified';
   String _stockSymbol = '';
-  TimeInterval? _timeInterval;
-
   List<Offset> _annoOffsets = [];
 
+  TimeInterval? _timeInterval;
   StockSymbolModel? _stockSymbolModel;
   late http.Response responseDaily, responseWeekly, responseMonthly, responseSymbol;
 
-  bool _drawAnnotation = false;
-  bool _showAnnotation = false;
+
 
   TimeInterval? get timeInterval => _timeInterval;
-
   List<Offset> get annoOffsets => _annoOffsets;
 
   bool get drawAnnotation => _drawAnnotation;
   bool get showAnnotation => _showAnnotation;
 
-  Future<bool> getJsonViaHttp(String stockSymbol, String function) async {
+  StockSymbolModel? get stockSymbolModel {
+    if (_timeInterval == TimeInterval.daily) {
+      _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseDaily.body));
+    } else if (_timeInterval == TimeInterval.weekly) {
+      _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseWeekly.body));
+    } else if (_timeInterval == TimeInterval.monthly) {
+      _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseMonthly.body));
+    } else
+      return _stockSymbolModel;
+
+    return _stockSymbolModel;
+  }
+
+  /*
+    FUCNTION getJsonViaHttp
+      Contains network calls to fetch stock symbol data
+  */
+  Future<bool> getJsonViaHttp(String stockSymbol) async {
     Uri daily = Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=$stockSymbol&outputsize=full&apikey=Y9JVN150E7U3U6ZV');
     Uri weekly = Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol=$stockSymbol&apikey=Y9JVN150E7U3U6ZV');
     Uri monthly = Uri.parse('https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=$stockSymbol&apikey=Y9JVN150E7U3U6ZV');
@@ -39,53 +53,16 @@ class Controller with ChangeNotifier {
       responseDaily = await http.get(daily);
       responseWeekly = await http.get(weekly);
       responseMonthly = await http.get(monthly);
-      // _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseDaily.body));
 
-      // _stockSymbolModel!.candlestickData.forEach((element) {
-      //   print('Timestamp : ${element.timeStamp}\nOpen : ${element.open}\nClose : ${element.close}\nHigh : ${element.high}\nLow : ${element.low}\nVolume : ${element.volume}\n\n');
-      // });
-
-      // _stockSymbolModel!.candlestickData.forEach((element) {
-      //   print('Timestamp : ${element.timeStamp}\nOpen : ${element.open}\nClose : ${element.close}\nHigh : ${element.high}\nLow : ${element.low}\nVolume : ${element.volume}\n\n');
-      // });
-      //
-      // _stockSymbolModel!.candlestickDataMonthly.forEach((element) {
-      //   print('Timestamp : ${element.timeStamp}\nOpen : ${element.open}\nClose : ${element.close}\nHigh : ${element.high}\nLow : ${element.low}\nVolume : ${element.volume}\n\n');
-      // });
-
-      // _function = 'TIME_SERIES_DAILY';
       _timeInterval = TimeInterval.daily;
-      // _function = 'TIME_SERIES_MONTHLY';
-      // _function = 'TIME_SERIES_WEEKLY';
 
       notifyListeners();
 
-      // if (stockSymbolModel!.metaData.symbol == stockSymbol)
-      //   return true;
-      // else
-      //   return false;
       return true;
     } catch (e) {
       print('Error while fetching data from https: $e');
       return false;
     }
-    // return stockSymbolModel;
-  }
-
-  StockSymbolModel? get stockSymbolModel {
-    // if (_function.contains('TIME_SERIES_DAILY')) {
-    if (_timeInterval == TimeInterval.daily) {
-      _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseDaily.body));
-    // } else if (_function.contains('TIME_SERIES_WEEKLY')) {
-    } else if (_timeInterval == TimeInterval.weekly) {
-      _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseWeekly.body));
-    // } else if (_function.contains('TIME_SERIES_MONTHLY')) {
-    } else if (_timeInterval == TimeInterval.monthly) {
-      _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseMonthly.body));
-    } else
-      return _stockSymbolModel;
-
-    return _stockSymbolModel;
   }
 
   void setFunction(TimeInterval timeInterval) {
@@ -102,7 +79,6 @@ class Controller with ChangeNotifier {
       var sym = json.decode(responseSymbol.body);
       String fetchedSymbol = Map.from(List.from(Map.from(sym).values.first).first).values.first.toString();
       if (fetchedSymbol == stockSymbol) {
-        // print(Map.from(List.from(Map.from(sym).values.first).first).values.first.toString().contains(stockSymbol));
         _stockSymbol = fetchedSymbol;
         return true;
       } else
@@ -162,7 +138,10 @@ class Controller with ChangeNotifier {
     _startOffset = dx;
   }
 
-  // Read and write from hive
+  /*
+      [BLOCK] Database Transactions
+  */
+
   Box<SymbolAnnotation> _researchBox = Hive.box<SymbolAnnotation>('annoBox');
 
   void writeToBox(SymbolAnnotation object) {
@@ -209,19 +188,15 @@ class Controller with ChangeNotifier {
     return _researchBox.getAt(index);
   }
 
-  List<Offset> getOldOffsets() {
-    List<SymbolOffset> temp = [];
-    List<Offset> offsets = [];
+  List<AnnoOffsetModel> getOldOffsets() {
+    List<AnnoOffsetModel> temp = [];
 
     if (existsInHive(_stockSymbol)) {
       _researchBox.getAt(getIndex(_stockSymbol))!.symbolAnnoOffsets.forEach((element) {
         if (element.timeInterval == _timeInterval) {
-          temp.addAll(element.annoOffsets);
+          temp.add(element);
         }});
     }
-
-    temp.forEach((element) {offsets.add(Offset(element.dx, element.dy));});
-
-    return offsets;
+    return temp;
   }
 }

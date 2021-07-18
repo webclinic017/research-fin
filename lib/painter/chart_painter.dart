@@ -3,15 +3,16 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:researchfin/theme/colors.dart';
 
-import 'models/candlestick_data_model.dart';
-import 'painter_params.dart';
+import 'package:researchfin/models/candlestick_data_model.dart';
+import 'package:researchfin/models/symbol_annotation.dart';
+import 'package:researchfin/painter/painter_params.dart';
+import 'package:researchfin/theme/colors.dart';
 
 class ChartPainter extends CustomPainter {
   final PainterParams params;
   final List<Offset> offsets;
-  final List<Offset> oldOffsets;
+  final List<AnnoOffsetModel> oldOffsets;
   final bool isAnnotationEnabled;
   final bool showAnnotation;
 
@@ -48,26 +49,30 @@ class ChartPainter extends CustomPainter {
     }
   }
 
-  void _drawOldAnnotations(Canvas canvas, List<Offset> oldOffsets) {
+  void _drawOldAnnotations(Canvas canvas, List<AnnoOffsetModel> oldOffsets) {
     final oldAnnotePaint = Paint()
       ..color = AppColor.stockOrange
       ..isAntiAlias = true
       ..strokeWidth = 2.0;
 
-    List<Offset> modifiedOffset = [];
+    for (var k = 0 ; k < oldOffsets.length ; k++) {
+      AnnoOffsetModel tempObject = oldOffsets[k];
+      List <Offset> modifiedOffset = [];
 
-    oldOffsets.forEach((element) {
-      modifiedOffset.add(Offset(element.dx - params.startOffset, element.dy));
-    });
+      tempObject.annoOffsets.forEach((element) {
+        modifiedOffset.add(Offset(element.dx - params.startOffset, element.dy));
+      });
 
-    for (var i = 0; i < modifiedOffset.length - 1; i++) {
-      if (modifiedOffset[i].dx <= params.chartWidth) {
-        if (modifiedOffset[i] != Offset.zero && modifiedOffset[i + 1] != Offset.zero) {
-          canvas.drawLine(modifiedOffset[i], modifiedOffset[i + 1], oldAnnotePaint);
-        } else if (modifiedOffset[i] != Offset.zero && modifiedOffset[i + 1] == Offset.zero) {
-          canvas.drawPoints(PointMode.points, [modifiedOffset[i]], oldAnnotePaint);
+      for (var i = 0; i < modifiedOffset.length - 1; i++) {
+        if (modifiedOffset[i].dx <= params.chartWidth) {
+          if (modifiedOffset[i] != Offset.infinite && modifiedOffset[i + 1] != Offset.infinite) {
+            canvas.drawLine(modifiedOffset[i], modifiedOffset[i + 1], oldAnnotePaint);
+          } else if (modifiedOffset[i] != Offset.infinite && modifiedOffset[i + 1] == Offset.infinite) {
+            canvas.drawPoints(PointMode.points, [modifiedOffset[i]], oldAnnotePaint);
+          }
         }
       }
+      modifiedOffset.clear();
     }
   }
 
@@ -77,26 +82,16 @@ class ChartPainter extends CustomPainter {
       ..color = AppColor.stockOrange
       ..isAntiAlias = true
       ..strokeWidth = 2.0;
-    // canvas.drawPoints(PointMode.points, [offsets[0]], anotePaint);
-    // for (var i = 1 ; i < offsets.length ; i++) {
-    //   if (offsets[i] != Offset.zero && offsets[i - 1] != Offset.zero) {
-    //     canvas.drawLine(offsets[i - 1], offsets[i], anotePaint);
-    //   }
-    //   else if (offsets[i] != Offset.zero) {
-    //     canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
-    //   }
-    // }
     for (var i = 0; i < offsets.length - 1; i++) {
-      if (offsets[i] != Offset.zero && offsets[i + 1] != Offset.zero) {
+      if (offsets[i] != Offset.infinite && offsets[i + 1] != Offset.infinite) {
         canvas.drawLine(offsets[i], offsets[i + 1], anotePaint);
-      } else if (offsets[i] != Offset.zero && offsets[i + 1] == Offset.zero) {
+      } else if (offsets[i] != Offset.infinite && offsets[i + 1] == Offset.infinite) {
         canvas.drawPoints(PointMode.points, [offsets[i]], anotePaint);
       }
     }
   }
 
   void _drawDateLabels(Canvas canvas, PainterParams params) {
-    // final count = params.candles.length;
 
     String getDate(DateTime timestamp) {
       final date = '${timestamp.month}/${timestamp.day}';

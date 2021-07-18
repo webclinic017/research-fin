@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:researchfin/models/symbol_annotation.dart';
+import 'package:hive/hive.dart';
 
 import 'package:researchfin/theme/colors.dart';
 import 'package:researchfin/views/candlestick_chart_view.dart';
 import 'package:researchfin/widgets/neo_square_button.dart';
 import 'package:researchfin/controller/controller.dart';
-import 'package:hive/hive.dart';
+import 'package:researchfin/models/symbol_annotation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -22,10 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late TextEditingController _stockSymbolController;
 
   late Controller controller, controllerFalse;
-
-  final String _functionDaily = 'TIME_SERIES_DAILY';
-  final String _functionWeekly = 'TIME_SERIES_WEEKLY';
-  final String _functionMonthly = 'TIME_SERIES_MONTHLY';
 
   late bool isValidSymbol;
   late bool showTimeInterval;
@@ -100,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             setState(() {});
                             if (_formKey.currentState!.validate()) {
                               late bool status;
-                              status = await controllerFalse.getJsonViaHttp(searchText.toUpperCase(), _functionDaily);
+                              status = await controllerFalse.getJsonViaHttp(searchText.toUpperCase());
 
                               setState(() {
                                 if (status) {
@@ -123,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       setState(() {});
                       if (_formKey.currentState!.validate()) {
                         late bool status;
-                        status = await controllerFalse.getJsonViaHttp(_stockSymbolController.text.toUpperCase(), _functionDaily);
+                        status = await controllerFalse.getJsonViaHttp(_stockSymbolController.text.toUpperCase());
 
                         setState(() {
                           if (status) {
