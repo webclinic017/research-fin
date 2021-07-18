@@ -19,6 +19,7 @@ void main() async {
   Hive.registerAdapter(TimeIntervalAdapter());
   Hive.registerAdapter(SymbolAnnotationAdapter());
   Hive.registerAdapter(AnnoOffsetModelAdapter());
+  Hive.registerAdapter(SymbolOffsetAdapter());
 
   await Hive.initFlutter();
   await Hive.openBox<SymbolAnnotation>('annoBox');

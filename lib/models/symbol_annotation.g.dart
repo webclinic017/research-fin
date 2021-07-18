@@ -8,7 +8,7 @@ part of 'symbol_annotation.dart';
 
 class TimeIntervalAdapter extends TypeAdapter<TimeInterval> {
   @override
-  final int typeId = 3;
+  final int typeId = 4;
 
   @override
   TimeInterval read(BinaryReader reader) {
@@ -98,7 +98,7 @@ class AnnoOffsetModelAdapter extends TypeAdapter<AnnoOffsetModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AnnoOffsetModel(
-      annoOffsets: (fields[0] as List).cast<Offset>(),
+      annoOffsets: (fields[0] as List).cast<SymbolOffset>(),
       timeInterval: fields[1] as TimeInterval,
     );
   }
@@ -120,6 +120,43 @@ class AnnoOffsetModelAdapter extends TypeAdapter<AnnoOffsetModel> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is AnnoOffsetModelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class SymbolOffsetAdapter extends TypeAdapter<SymbolOffset> {
+  @override
+  final int typeId = 3;
+
+  @override
+  SymbolOffset read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return SymbolOffset(
+      dx: fields[0] as double,
+      dy: fields[1] as double,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, SymbolOffset obj) {
+    writer
+      ..writeByte(2)
+      ..writeByte(0)
+      ..write(obj.dx)
+      ..writeByte(1)
+      ..write(obj.dy);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SymbolOffsetAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

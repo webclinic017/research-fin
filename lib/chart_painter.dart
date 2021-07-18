@@ -54,16 +54,18 @@ class ChartPainter extends CustomPainter {
       ..isAntiAlias = true
       ..strokeWidth = 2.0;
 
+    List<Offset> modifiedOffset = [];
+
     oldOffsets.forEach((element) {
-      element = Offset(element.dx - params.startOffset, element.dx);
+      modifiedOffset.add(Offset(element.dx - params.startOffset, element.dy));
     });
 
-    for (var i = 0; i < oldOffsets.length - 1; i++) {
-      if (oldOffsets[i].dx >= params.startOffset && oldOffsets[i].dx <= params.chartWidth) {
-        if (oldOffsets[i] != Offset.zero && oldOffsets[i + 1] != Offset.zero) {
-          canvas.drawLine(oldOffsets[i], oldOffsets[i + 1], oldAnnotePaint);
-        } else if (oldOffsets[i] != Offset.zero && oldOffsets[i + 1] == Offset.zero) {
-          canvas.drawPoints(PointMode.points, [oldOffsets[i]], oldAnnotePaint);
+    for (var i = 0; i < modifiedOffset.length - 1; i++) {
+      if (modifiedOffset[i].dx <= params.chartWidth) {
+        if (modifiedOffset[i] != Offset.zero && modifiedOffset[i + 1] != Offset.zero) {
+          canvas.drawLine(modifiedOffset[i], modifiedOffset[i + 1], oldAnnotePaint);
+        } else if (modifiedOffset[i] != Offset.zero && modifiedOffset[i + 1] == Offset.zero) {
+          canvas.drawPoints(PointMode.points, [modifiedOffset[i]], oldAnnotePaint);
         }
       }
     }

@@ -11,9 +11,9 @@ import 'package:researchfin/models/symbol_annotation.dart';
 class Controller with ChangeNotifier {
   double _startOffset = 0.0;
 
-  String _function = 'not_specified';
+  // String _function = 'not_specified';
   String _stockSymbol = '';
-  TimeInterval _timeInterval = TimeInterval.daily;
+  TimeInterval? _timeInterval;
 
   List<Offset> _annoOffsets = [];
 
@@ -23,7 +23,7 @@ class Controller with ChangeNotifier {
   bool _drawAnnotation = false;
   bool _showAnnotation = false;
 
-  String get function => _function;
+  TimeInterval? get timeInterval => _timeInterval;
 
   List<Offset> get annoOffsets => _annoOffsets;
 
@@ -53,8 +53,8 @@ class Controller with ChangeNotifier {
       //   print('Timestamp : ${element.timeStamp}\nOpen : ${element.open}\nClose : ${element.close}\nHigh : ${element.high}\nLow : ${element.low}\nVolume : ${element.volume}\n\n');
       // });
 
-      _function = 'TIME_SERIES_DAILY';
-      // _timeInterval = TimeInterval.daily;
+      // _function = 'TIME_SERIES_DAILY';
+      _timeInterval = TimeInterval.daily;
       // _function = 'TIME_SERIES_MONTHLY';
       // _function = 'TIME_SERIES_WEEKLY';
 
@@ -73,14 +73,14 @@ class Controller with ChangeNotifier {
   }
 
   StockSymbolModel? get stockSymbolModel {
-    if (_function.contains('TIME_SERIES_DAILY')) {
-    // if (_timeInterval == TimeInterval.daily) {
+    // if (_function.contains('TIME_SERIES_DAILY')) {
+    if (_timeInterval == TimeInterval.daily) {
       _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseDaily.body));
-    } else if (_function.contains('TIME_SERIES_WEEKLY')) {
-    // } else if (_timeInterval == TimeInterval.weekly) {
+    // } else if (_function.contains('TIME_SERIES_WEEKLY')) {
+    } else if (_timeInterval == TimeInterval.weekly) {
       _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseWeekly.body));
-    } else if (_function.contains('TIME_SERIES_MONTHLY')) {
-    // } else if (_timeInterval == TimeInterval.monthly) {
+    // } else if (_function.contains('TIME_SERIES_MONTHLY')) {
+    } else if (_timeInterval == TimeInterval.monthly) {
       _stockSymbolModel = StockSymbolModel.fromJson(json.decode(responseMonthly.body));
     } else
       return _stockSymbolModel;
@@ -88,8 +88,8 @@ class Controller with ChangeNotifier {
     return _stockSymbolModel;
   }
 
-  void setFunction(String function) {
-    _function = function;
+  void setFunction(TimeInterval timeInterval) {
+    _timeInterval = timeInterval;
 
     notifyListeners();
   }
@@ -100,8 +100,10 @@ class Controller with ChangeNotifier {
     try {
       responseSymbol = await http.get(symbolUrl);
       var sym = json.decode(responseSymbol.body);
-      if (Map.from(List.from(Map.from(sym).values.first).first).values.first.toString() == stockSymbol) {
+      String fetchedSymbol = Map.from(List.from(Map.from(sym).values.first).first).values.first.toString();
+      if (fetchedSymbol == stockSymbol) {
         // print(Map.from(List.from(Map.from(sym).values.first).first).values.first.toString().contains(stockSymbol));
+        _stockSymbol = fetchedSymbol;
         return true;
       } else
         return false;
@@ -116,15 +118,17 @@ class Controller with ChangeNotifier {
       _drawAnnotation = true;
     } else {
       if (_annoOffsets.isNotEmpty) {
-        _annoOffsets.forEach((element) => element = Offset(_startOffset + element.dx, element.dy));
+        List<SymbolOffset> symbolOffset = [];
+        _annoOffsets.forEach((element) => symbolOffset.add(SymbolOffset(dx: _startOffset + element.dx, dy: element.dy)));
         var writeObject = SymbolAnnotation(
           stockSymbol: _stockSymbol,
           symbolAnnoOffsets: [
-            AnnoOffsetModel(annoOffsets: _annoOffsets, timeInterval: _timeInterval),
+            AnnoOffsetModel(annoOffsets: symbolOffset, timeInterval: _timeInterval! ),
           ],
         );
 
         writeToBox(writeObject);
+        _annoOffsets.clear();
       }
       _drawAnnotation = false;
     }
@@ -206,7 +210,8 @@ class Controller with ChangeNotifier {
   }
 
   List<Offset> getOldOffsets() {
-    List<Offset> temp = [];
+    List<SymbolOffset> temp = [];
+    List<Offset> offsets = [];
 
     if (existsInHive(_stockSymbol)) {
       _researchBox.getAt(getIndex(_stockSymbol))!.symbolAnnoOffsets.forEach((element) {
@@ -215,6 +220,8 @@ class Controller with ChangeNotifier {
         }});
     }
 
-    return temp;
+    temp.forEach((element) {offsets.add(Offset(element.dx, element.dy));});
+
+    return offsets;
   }
 }

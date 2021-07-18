@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:researchfin/models/symbol_annotation.dart';
 
 import 'package:researchfin/theme/colors.dart';
 import 'package:researchfin/views/candlestick_chart_view.dart';
@@ -191,36 +192,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             NeoSquareButton(
                               onTap: () {
-                                controllerFalse.setFunction(_functionDaily);
+                                controllerFalse.setFunction(TimeInterval.daily);
                               },
                               child: Text(
                                 'D',
                                 style: Theme.of(context).textTheme.subtitle2!.copyWith(
-                                      color: controller.function.contains('DAILY') ? AppColor.stockGreen : AppColor.stockWhite,
+                                      color: controller.timeInterval == TimeInterval.daily ? AppColor.stockGreen : AppColor.stockWhite,
                                     ),
                               ),
                             ),
                             SizedBox(width: 24.0),
                             NeoSquareButton(
                               onTap: () {
-                                controllerFalse.setFunction(_functionWeekly);
+                                controllerFalse.setFunction(TimeInterval.weekly);
                               },
                               child: Text(
                                 'W',
                                 style: Theme.of(context).textTheme.subtitle2!.copyWith(
-                                      color: controller.function.contains('WEEKLY') ? AppColor.stockGreen : AppColor.stockWhite,
+                                      color: controller.timeInterval == TimeInterval.weekly ? AppColor.stockGreen : AppColor.stockWhite,
                                     ),
                               ),
                             ),
                             SizedBox(width: 24.0),
                             NeoSquareButton(
                               onTap: () {
-                                controllerFalse.setFunction(_functionMonthly);
+                                controllerFalse.setFunction(TimeInterval.monthly);
                               },
                               child: Text(
                                 'M',
                                 style: Theme.of(context).textTheme.subtitle2!.copyWith(
-                                      color: controller.function.contains('MONTHLY') ? AppColor.stockGreen : AppColor.stockWhite,
+                                      color: controller.timeInterval == TimeInterval.monthly ? AppColor.stockGreen : AppColor.stockWhite,
                                     ),
                               ),
                             ),

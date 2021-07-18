@@ -17,7 +17,7 @@ class SymbolAnnotation {
 @HiveType(typeId: 2)
 class AnnoOffsetModel {
   @HiveField(0)
-  List<Offset> annoOffsets;
+  List<SymbolOffset> annoOffsets;
 
   @HiveField(1)
   TimeInterval timeInterval;
@@ -26,6 +26,17 @@ class AnnoOffsetModel {
 }
 
 @HiveType(typeId: 3)
+class SymbolOffset {
+  @HiveField(0)
+  double dx;
+
+  @HiveField(1)
+  double dy;
+
+  SymbolOffset({required this.dx, required this.dy});
+}
+
+@HiveType(typeId: 4)
 enum TimeInterval {
   @HiveField(0)
   daily,
